@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caren Oliveira Advocacia – Ficha do Cliente</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+:root{--navy:#1a2744;--gold:#b89150;--gold-light:#d4aa6a;--cream:#faf8f4;--gray-100:#f5f3ef;--gray-300:#d6d0c4;--gray-500:#8a8070;--gray-700:#4a4540;--text:#2c2820;--error:#c0392b;--success:#2e7d52}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+
+/* ── PAINEL DE CONFIGURAÇÃO ── */
+#config-panel{background:#fff;border-bottom:3px solid var(--gold);padding:1.5rem 2rem}
+#config-panel h3{font-family:'EB Garamond',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.3rem}
+#config-panel p{font-size:.8rem;color:var(--gray-500);margin-bottom:1rem;line-height:1.5}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.cfg-field label{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-500);display:block;margin-bottom:.25rem}
+.cfg-field input{width:100%;border:1.5px solid var(--gray-300);border-radius:6px;padding:.5rem .75rem;font-size:.82rem;font-family:monospace;background:#fafafa}
+.cfg-field input:focus{outline:none;border-color:var(--gold)}
+#btn-salvar-cfg{background:var(--navy);color:#fff;border:none;border-radius:6px;padding:.55rem 1.5rem;font-size:.82rem;font-weight:600;cursor:pointer;letter-spacing:.04em}
+#btn-salvar-cfg:hover{background:#243360}
+.cfg-status{font-size:.78rem;margin-top:.5rem;display:none}
+.cfg-status.ok{color:var(--success)}
+.cfg-status.err{color:var(--error)}
+#cfg-toggle{font-size:.75rem;color:var(--gold);cursor:pointer;display:block;text-align:right;margin-top:.3rem;text-decoration:underline}
+
+/* ── HEADER ── */
+.header{background:var(--navy);padding:2.5rem 2rem 2rem;text-align:center;border-bottom:3px solid var(--gold)}
+.header-monogram{font-family:'EB Garamond',serif;font-size:2.8rem;color:var(--gold);letter-spacing:.12em;line-height:1;margin-bottom:.4rem}
+.header-title{font-family:'EB Garamond',serif;font-size:1.05rem;color:rgba(255,255,255,.7);letter-spacing:.25em;text-transform:uppercase;font-weight:400}
+.header-subtitle{margin-top:.8rem;font-size:.78rem;color:rgba(255,255,255,.45);letter-spacing:.08em}
+
+/* ── PROGRESS ── */
+.progress-wrap{background:var(--navy);padding:0 2rem 1.5rem;display:flex;justify-content:center}
+.progress-bar{display:flex;align-items:center;max-width:520px;width:100%}
+.progress-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative}
+.progress-step:not(:last-child)::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:rgba(255,255,255,.15);z-index:0}
+.progress-step.done:not(:last-child)::after,.progress-step.active:not(:last-child)::after{background:var(--gold);opacity:.5}
+.step-dot{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:rgba(255,255,255,.4);background:var(--navy);z-index:1;transition:all .3s}
+.progress-step.done .step-dot{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.progress-step.active .step-dot{background:transparent;border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 3px rgba(184,145,80,.2)}
+.step-label{font-size:.6rem;margin-top:.35rem;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;text-align:center}
+.progress-step.active .step-label,.progress-step.done .step-label{color:rgba(255,255,255,.65)}
+
+/* ── CONTAINER ── */
+.container{max-width:680px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+.section{display:none;animation:fadeIn .35s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.section-heading{font-family:'EB Garamond',serif;font-size:1.6rem;color:var(--navy);margin-bottom:.3rem;font-weight:400}
+.section-desc{font-size:.85rem;color:var(--gray-500);margin-bottom:2rem;line-height:1.6}
+
+/* ── FORM ── */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.field-row.single{grid-template-columns:1fr}
+.field-row.triple{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:.35rem}
+label{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-500)}
+label .req{color:var(--gold);margin-left:2px}
+input,select,textarea{border:1.5px solid var(--gray-300);border-radius:6px;padding:.65rem .85rem;font-size:.92rem;font-family:'Inter',sans-serif;background:#fff;color:var(--text);transition:border-color .2s,box-shadow .2s;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,145,80,.12)}
+input.error,select.error,textarea.error{border-color:var(--error)}
+.field-hint{font-size:.72rem;color:var(--gray-500);margin-top:.1rem}
+.field-error{font-size:.72rem;color:var(--error);margin-top:.1rem;display:none}
+textarea{resize:vertical;min-height:90px}
+.divider{border:none;border-top:1px solid var(--gray-300);margin:1.8rem 0}
+.sub-heading{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.toggle-field{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;background:var(--gray-100);border-radius:8px;margin-bottom:.75rem;cursor:pointer}
+.toggle-field input[type="checkbox"]{width:18px;height:18px;min-width:18px;accent-color:var(--gold);margin-top:2px}
+.toggle-label{font-size:.85rem;color:var(--gray-700);line-height:1.5}
+.toggle-label strong{color:var(--navy)}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;gap:1rem}
+.btn{padding:.75rem 2rem;border-radius:6px;font-size:.88rem;font-weight:600;letter-spacing:.05em;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:#243360}
+.btn-primary:disabled{background:var(--gray-300);cursor:not-allowed}
+.btn-secondary{background:transparent;color:var(--gray-500);border:1.5px solid var(--gray-300)}
+.btn-secondary:hover{border-color:var(--gray-500);color:var(--text)}
+.btn-send{background:var(--gold);color:var(--navy);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.8rem}
+.btn-send:hover{background:var(--gold-light)}
+.btn-send:disabled{background:var(--gray-300);cursor:not-allowed}
+
+/* ── REVIEW ── */
+.review-block{background:#fff;border:1px solid var(--gray-300);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.review-block-title{font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.85rem}
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem}
+.review-item label{font-size:.68rem;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em}
+.review-item span{font-size:.88rem;color:var(--text);display:block;margin-top:.1rem}
+.note-box{background:rgba(184,145,80,.08);border-left:3px solid var(--gold);padding:.85rem 1rem;border-radius:0 6px 6px 0;font-size:.82rem;color:var(--gray-700);line-height:1.6;margin-bottom:1.5rem}
+
+/* ── SUCCESS ── */
+.success-screen{text-align:center;padding:3rem 1rem}
+.success-icon{width:72px;height:72px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2rem}
+.success-title{font-family:'EB Garamond',serif;font-size:2rem;color:var(--navy);margin-bottom:.75rem}
+.success-msg{font-size:.92rem;color:var(--gray-500);line-height:1.7;max-width:420px;margin:0 auto}
+
+/* ── MISC ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:.75rem 1.5rem;border-radius:8px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.toast.error-toast{background:var(--error)}
+@media(max-width:540px){
+  .field-row{grid-template-columns:1fr}
+  .field-row.triple{grid-template-columns:1fr 1fr}
+  .review-grid{grid-template-columns:1fr}
+  .btn-row{flex-direction:column-reverse}
+  .btn{width:100%;text-align:center}
+  .cfg-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     PAINEL DE CONFIGURAÇÃO (visível só para você)
+     ════════════════════════════════════════════ -->
+<div id="config-panel">
+  <h3>⚙️ Configuração do e-mail — preencha uma vez e salve</h3>
+  <p>Cole abaixo as 3 chaves obtidas em <strong>emailjs.com</strong>. Após salvar, o painel some e o formulário fica pronto para uso.</p>
+  <div class="cfg-grid">
+    <div class="cfg-field">
+      <label>Service ID</label>
+      <input type="text" id="cfg-service" placeholder="service_xxxxxxx">
+    </div>
+    <div class="cfg-field">
+      <label>Template ID</label>
+      <input type="text" id="cfg-template" placeholder="template_xxxxxxx">
+    </div>
+    <div class="cfg-field">
+      <label>Public Key</label>
+      <input type="text" id="cfg-pubkey" placeholder="AbCdEfGhIjKl...">
+    </div>
+  </div>
+  <button id="btn-salvar-cfg" onclick="salvarConfig()">Salvar e ocultar painel</button>
+  <div class="cfg-status" id="cfg-status-msg"></div>
+  <span id="cfg-toggle" onclick="toggleConfig()" style="display:none">⚙️ Reabrir configuração</span>
+</div>
+
+<!-- ════════════ HEADER ════════════ -->
+<div class="header">
+  <div class="header-monogram">CFO</div>
+  <div class="header-title">Caren Franciele Oliveira &nbsp;·&nbsp; Advocacia</div>
+  <div class="header-subtitle">OAB/RS 109.892 &nbsp;·&nbsp; Porto Alegre – RS</div>
+</div>
+
+<!-- ════════════ PROGRESS ════════════ -->
+<div class="progress-wrap">
+  <div class="progress-bar">
+    <div class="progress-step active" id="ps1"><div class="step-dot">1</div><div class="step-label">Dados Pessoais</div></div>
+    <div class="progress-step" id="ps2"><div class="step-dot">2</div><div class="step-label">Endereço</div></div>
+    <div class="progress-step" id="ps3"><div class="step-dot">3</div><div class="step-label">Processo</div></div>
+    <div class="progress-step" id="ps4"><div class="step-dot">4</div><div class="step-label">Honorários</div></div>
+    <div class="progress-step" id="ps5"><div class="step-dot">5</div><div class="step-label">Revisão</div></div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ── SEÇÃO 1: DADOS PESSOAIS ── -->
+<div class="section active" id="sec1">
+  <h2 class="section-heading">Dados Pessoais</h2>
+  <p class="section-desc">Preencha seus dados conforme constam em seus documentos oficiais.</p>
+  <div class="field-row single"><div class="field">
+    <label>Nome completo <span class="req">*</span></label>
+    <input type="text" id="nome" placeholder="ex.: João da Silva Pereira">
+    <span class="field-error" id="err-nome">Campo obrigatório.</span>
+  </div></div>
+  <div class="field-row">
+    <div class="field">
+      <label>Nacionalidade <span class="req">*</span></label>
+      <input type="text" id="nacionalidade" value="brasileiro(a)">
+      <span class="field-error" id="err-nacionalidade">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Estado civil <span class="req">*</span></label>
+      <select id="estadoCivil">
+        <option value="">Selecione…</option>
+        <option>solteiro(a)</option><option>casado(a)</option><option>divorciado(a)</option>
+        <option>viúvo(a)</option><option>separado(a) judicialmente</option><option>união estável</option>
+      </select>
+      <span class="field-error" id="err-estadoCivil">Selecione uma opção.</span>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>Profissão <span class="req">*</span></label>
+      <input type="text" id="profissao" placeholder="ex.: motorista de aplicativo">
+      <span class="field-error" id="err-profissao">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Data de nascimento</label>
+      <input type="date" id="nascimento">
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>RG <span class="req">*</span></label>
+      <input type="text" id="rg" placeholder="ex.: 1234567">
+      <span class="field-error" id="err-rg">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Órgão emissor / UF</label>
+      <input type="text" id="rgOrgao" value="SSP/RS">
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>CPF <span class="req">*</span></label>
+      <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14">
+      <span class="field-error" id="err-cpf">CPF inválido (precisa ter 11 dígitos).</span>
+    </div>
+    <div class="field">
+      <label>Telefone / WhatsApp <span class="req">*</span></label>
+      <input type="tel" id="telefone" placeholder="(51) 9 9999-9999">
+      <span class="field-error" id="err-telefone">Campo obrigatório.</span>
+    </div>
+  </div>
+  <div class="field-row single"><div class="field">
+    <label>E-mail do cliente</label>
+    <input type="email" id="emailCliente" placeholder="cliente@email.com">
+  </div></div>
+  <div class="btn-row">
+    <span></span>
+    <button class="btn btn-primary" onclick="goTo(2)">Próximo →</button>
+  </div>
+</div>
+
+<!-- ── SEÇÃO 2: ENDEREÇO ── -->
+<div class="section" id="sec2">
+  <h2 class="section-heading">Endereço</h2>
+  <p class="section-desc">Endereço de residência atual, conforme constará nos documentos.</p>
+  <div class="field-row">
+    <div class="field">
+      <label>CEP <span class="req">*</span></label>
+      <input type="text" id="cep" placeholder="00000-000" maxlength="9" oninput="buscaCep(this)">
+      <span class="field-hint">Preenchimento automático ao digitar o CEP.</span>
+      <span class="field-error" id="err-cep">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Logradouro <span class="req">*</span></label>
+      <input type="text" id="rua" placeholder="ex.: Rua das Flores">
+      <span class="field-error" id="err-rua">Campo obrigatório.</span>
+    </div>
+  </div>
+  <div class="field-row triple">
+    <div class="field">
+      <label>Número <span class="req">*</span></label>
+      <input type="text" id="numero" placeholder="123">
+      <span class="field-error" id="err-numero">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Complemento</label>
+      <input type="text" id="complemento" placeholder="Apto 302">
+    </div>
+    <div class="field">
+      <label>Bairro <span class="req">*</span></label>
+      <input type="text" id="bairro" placeholder="ex.: Centro">
+      <span class="field-error" id="err-bairro">Campo obrigatório.</span>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>Cidade <span class="req">*</span></label>
+      <input type="text" id="cidade" placeholder="ex.: Porto Alegre">
+      <span class="field-error" id="err-cidade">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Estado (UF) <span class="req">*</span></label>
+      <input type="text" id="uf" placeholder="RS" maxlength="2">
+      <span class="field-error" id="err-uf">Campo obrigatório.</span>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(1)">← Voltar</button>
+    <button class="btn btn-primary" onclick="goTo(3)">Próximo →</button>
+  </div>
+</div>
+
+<!-- ── SEÇÃO 3: PROCESSO ── -->
+<div class="section" id="sec3">
+  <h2 class="section-heading">Dados do Processo</h2>
+  <p class="section-desc">Informe os dados relativos ao caso e à outorga de poderes.</p>
+  <div class="field-row single"><div class="field">
+    <label>Objeto / descrição do caso <span class="req">*</span></label>
+    <textarea id="objeto" placeholder="Ex.: ação de indenização por danos morais decorrentes de acidente de trânsito, processo nº 5000000-00.2026.8.21.0001, em trâmite perante a 1ª Vara Cível da Comarca de Porto Alegre/RS."></textarea>
+    <span class="field-hint">Texto que constará na Procuração e no Contrato.</span>
+    <span class="field-error" id="err-objeto">Campo obrigatório.</span>
+  </div></div>
+  <div class="field-row">
+    <div class="field">
+      <label>Número do processo</label>
+      <input type="text" id="numProcesso" placeholder="0000000-00.0000.0.00.0000">
+    </div>
+    <div class="field">
+      <label>Vara / Juízo</label>
+      <input type="text" id="vara" placeholder="ex.: 1ª Vara Cível – Porto Alegre/RS">
+    </div>
+  </div>
+  <hr class="divider">
+  <p class="sub-heading">Declaração de Hipossuficiência</p>
+  <label class="toggle-field">
+    <input type="checkbox" id="hipoCheck">
+    <span class="toggle-label">O cliente declara <strong>hipossuficiência econômica</strong> e solicita o benefício da gratuidade da justiça (art. 98 CPC).</span>
+  </label>
+  <div id="hipoExtra" style="display:none;margin-top:.5rem">
+    <div class="field-row single"><div class="field">
+      <label>Motivo específico (opcional)</label>
+      <textarea id="hipoMotivo" placeholder="Ex.: minha renda mensal de R$ 1.800,00 é insuficiente para arcar com as custas processuais sem prejuízo do sustento da minha família."></textarea>
+      <span class="field-hint">Deixe em branco para usar o texto padrão do modelo.</span>
+    </div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(2)">← Voltar</button>
+    <button class="btn btn-primary" onclick="goTo(4)">Próximo →</button>
+  </div>
+</div>
+
+<!-- ── SEÇÃO 4: HONORÁRIOS ── -->
+<div class="section" id="sec4">
+  <h2 class="section-heading">Honorários</h2>
+  <p class="section-desc">Defina os valores e condições de pagamento para o contrato.</p>
+  <div class="field-row">
+    <div class="field">
+      <label>Valor dos honorários (R$) <span class="req">*</span></label>
+      <input type="text" id="honorarioValor" placeholder="ex.: 3.000,00">
+      <span class="field-error" id="err-honorarioValor">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Valor por extenso <span class="req">*</span></label>
+      <input type="text" id="honorarioExtenso" placeholder="ex.: três mil reais">
+      <span class="field-error" id="err-honorarioExtenso">Campo obrigatório.</span>
+    </div>
+  </div>
+  <div class="field-row single"><div class="field">
+    <label>Forma / parcelamento <span class="req">*</span></label>
+    <textarea id="honorarioForma" placeholder="ex.: pagamento à vista no ato da assinatura; ou em 3 parcelas de R$ 1.000,00, vencendo a 1ª em 15/07/2026 e as demais em datas consecutivas mensais."></textarea>
+    <span class="field-error" id="err-honorarioForma">Campo obrigatório.</span>
+  </div></div>
+  <div class="field-row">
+    <div class="field">
+      <label>Honorários de êxito (%) <span class="req">*</span></label>
+      <input type="text" id="honorarioExito" placeholder="ex.: 20">
+      <span class="field-error" id="err-honorarioExito">Campo obrigatório.</span>
+    </div>
+    <div class="field">
+      <label>Data de assinatura</label>
+      <input type="date" id="dataContrato">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(3)">← Voltar</button>
+    <button class="btn btn-primary" onclick="goTo(5)">Revisar →</button>
+  </div>
+</div>
+
+<!-- ── SEÇÃO 5: REVISÃO ── -->
+<div class="section" id="sec5">
+  <h2 class="section-heading">Revisão</h2>
+  <p class="section-desc">Confira seus dados. Após confirmar, os documentos serão gerados e enviados ao escritório.</p>
+  <div class="review-block">
+    <div class="review-block-title">Dados Pessoais</div>
+    <div class="review-grid">
+      <div class="review-item"><label>Nome</label><span id="rv-nome"></span></div>
+      <div class="review-item"><label>CPF</label><span id="rv-cpf"></span></div>
+      <div class="review-item"><label>RG</label><span id="rv-rg"></span></div>
+      <div class="review-item"><label>Estado civil</label><span id="rv-ec"></span></div>
+      <div class="review-item"><label>Profissão</label><span id="rv-prof"></span></div>
+      <div class="review-item"><label>Telefone</label><span id="rv-tel"></span></div>
+    </div>
+  </div>
+  <div class="review-block">
+    <div class="review-block-title">Endereço</div>
+    <div class="review-grid">
+      <div class="review-item" style="grid-column:1/-1"><label>Endereço completo</label><span id="rv-end"></span></div>
+    </div>
+  </div>
+  <div class="review-block">
+    <div class="review-block-title">Processo</div>
+    <div class="review-grid">
+      <div class="review-item" style="grid-column:1/-1"><label>Objeto</label><span id="rv-obj"></span></div>
+      <div class="review-item"><label>Gratuidade da Justiça</label><span id="rv-hipo"></span></div>
+    </div>
+  </div>
+  <div class="review-block">
+    <div class="review-block-title">Honorários</div>
+    <div class="review-grid">
+      <div class="review-item"><label>Valor</label><span id="rv-honval"></span></div>
+      <div class="review-item"><label>Êxito</label><span id="rv-honex"></span></div>
+      <div class="review-item" style="grid-column:1/-1"><label>Forma de pagamento</label><span id="rv-honforma"></span></div>
+    </div>
+  </div>
+  <div class="note-box">
+    Ao confirmar, três documentos (<strong>Procuração, Declaração de Hipossuficiência e Contrato de Honorários</strong>) serão gerados automaticamente e enviados para <strong>cfo.escritorio@gmail.com</strong>, além de baixados no seu dispositivo como backup.
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(4)">← Voltar</button>
+    <button class="btn btn-send" id="btnEnviar" onclick="enviarFormulario()">✉ Confirmar e enviar</button>
+  </div>
+</div>
+
+<!-- ── SEÇÃO 6: SUCESSO ── -->
+<div class="section" id="sec6">
+  <div class="success-screen">
+    <div class="success-icon">✓</div>
+    <h2 class="success-title">Enviado com sucesso!</h2>
+    <p class="success-msg">
+      Seus dados foram recebidos e os documentos gerados.<br><br>
+      A Dra. <strong>Caren Franciele Oliveira</strong> entrará em contato em breve para confirmar o atendimento e orientar sobre a assinatura dos documentos.<br><br>
+      <em style="font-size:.8rem;color:var(--gray-500)">Guarde os arquivos baixados no seu dispositivo.</em>
+    </p>
+  </div>
+</div>
+
+</div><!-- /container -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────
+const EMAIL_DESTINO = 'cfo.escritorio@gmail.com';
+
+function salvarConfig(){
+  const s = document.getElementById('cfg-service').value.trim();
+  const t = document.getElementById('cfg-template').value.trim();
+  const k = document.getElementById('cfg-pubkey').value.trim();
+  const msg = document.getElementById('cfg-status-msg');
+  if(!s||!t||!k){
+    msg.textContent = 'Preencha os três campos antes de salvar.';
+    msg.className = 'cfg-status err';
+    msg.style.display = 'block';
+    return;
+  }
+  localStorage.setItem('ejs_service', s);
+  localStorage.setItem('ejs_template', t);
+  localStorage.setItem('ejs_pubkey', k);
+  emailjs.init(k);
+  document.getElementById('config-panel').style.display = 'none';
+  document.getElementById('cfg-toggle').style.display = 'block';
+  toast('Configuração salva com sucesso!');
+}
+
+function toggleConfig(){
+  const p = document.getElementById('config-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+// Carregar chaves salvas no navegador
+(function(){
+  const s = localStorage.getItem('ejs_service');
+  const t = localStorage.getItem('ejs_template');
+  const k = localStorage.getItem('ejs_pubkey');
+  if(s && t && k){
+    document.getElementById('cfg-service').value = s;
+    document.getElementById('cfg-template').value = t;
+    document.getElementById('cfg-pubkey').value = k;
+    emailjs.init(k);
+    document.getElementById('config-panel').style.display = 'none';
+    document.getElementById('cfg-toggle').style.display = 'block';
+  }
+})();
+
+// ── NAVEGAÇÃO ───────────────────────────────────────────────────────
+let cur = 1;
+function goTo(n){
+  if(n > cur && !validar(cur)) return;
+  document.getElementById('sec'+cur).classList.remove('active');
+  const ps = document.getElementById('ps'+cur);
+  if(ps) ps.classList.replace ? ps.classList.replace('active','done') : (ps.classList.remove('active'), ps.classList.add('done'));
+  cur = n;
+  document.getElementById('sec'+n).classList.add('active');
+  const psn = document.getElementById('ps'+n);
+  if(psn) psn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(n===5) popularRevisao();
+}
+
+// ── VALIDAÇÃO ───────────────────────────────────────────────────────
+function req(id, errId){
+  const el = document.getElementById(id);
+  const ok = el.value.trim() !== '';
+  el.classList.toggle('error', !ok);
+  if(errId) document.getElementById(errId).style.display = ok?'none':'block';
+  return ok;
+}
+function validarCPF(){
+  const v = document.getElementById('cpf').value.replace(/\D/g,'');
+  const ok = v.length === 11;
+  document.getElementById('cpf').classList.toggle('error',!ok);
+  document.getElementById('err-cpf').style.display = ok?'none':'block';
+  return ok;
+}
+function validar(n){
+  if(n===1){const a=req('nome','err-nome'),b=req('nacionalidade','err-nacionalidade'),c=req('estadoCivil','err-estadoCivil'),d=req('profissao','err-profissao'),e=req('rg','err-rg'),f=validarCPF(),g=req('telefone','err-telefone');return a&&b&&c&&d&&e&&f&&g}
+  if(n===2){const a=req('cep','err-cep'),b=req('rua','err-rua'),c=req('numero','err-numero'),d=req('bairro','err-bairro'),e=req('cidade','err-cidade'),f=req('uf','err-uf');return a&&b&&c&&d&&e&&f}
+  if(n===3) return req('objeto','err-objeto');
+  if(n===4){const a=req('honorarioValor','err-honorarioValor'),b=req('honorarioExtenso','err-honorarioExtenso'),c=req('honorarioForma','err-honorarioForma'),d=req('honorarioExito','err-honorarioExito');return a&&b&&c&&d}
+  return true;
+}
+
+// ── MÁSCARAS ────────────────────────────────────────────────────────
+document.getElementById('cpf').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'');
+  v=v.replace(/(\d{3})(\d)/,'$1.$2');
+  v=v.replace(/(\d{3})(\d)/,'$1.$2');
+  v=v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  this.value=v;
+});
+document.getElementById('cep').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'');
+  v=v.replace(/(\d{5})(\d)/,'$1-$2');
+  this.value=v;
+});
+
+// ── CEP ─────────────────────────────────────────────────────────────
+async function buscaCep(el){
+  const cep=el.value.replace(/\D/g,'');
+  if(cep.length!==8) return;
+  try{
+    const r=await fetch('https://viacep.com.br/ws/'+cep+'/json/');
+    const d=await r.json();
+    if(!d.erro){
+      document.getElementById('rua').value=d.logradouro||'';
+      document.getElementById('bairro').value=d.bairro||'';
+      document.getElementById('cidade').value=d.localidade||'';
+      document.getElementById('uf').value=d.uf||'';
+    }
+  }catch(e){}
+}
+
+// ── HIPO TOGGLE ─────────────────────────────────────────────────────
+document.getElementById('hipoCheck').addEventListener('change',function(){
+  document.getElementById('hipoExtra').style.display=this.checked?'block':'none';
+});
+
+// ── REVISÃO ─────────────────────────────────────────────────────────
+function v(id){return document.getElementById(id).value.trim()||'—'}
+function popularRevisao(){
+  const comp=v('complemento')!=='—'?', '+v('complemento'):'';
+  const end=v('rua')+', nº '+v('numero')+comp+', Bairro '+v('bairro')+', '+v('cidade')+'/'+v('uf')+', CEP '+v('cep');
+  document.getElementById('rv-nome').textContent=v('nome');
+  document.getElementById('rv-cpf').textContent=v('cpf');
+  document.getElementById('rv-rg').textContent=v('rg')+' '+v('rgOrgao');
+  document.getElementById('rv-ec').textContent=v('estadoCivil');
+  document.getElementById('rv-prof').textContent=v('profissao');
+  document.getElementById('rv-tel').textContent=v('telefone');
+  document.getElementById('rv-end').textContent=end;
+  document.getElementById('rv-obj').textContent=v('objeto');
+  document.getElementById('rv-hipo').textContent=document.getElementById('hipoCheck').checked?'Sim':'Não';
+  document.getElementById('rv-honval').textContent='R$ '+v('honorarioValor');
+  document.getElementById('rv-honex').textContent=v('honorarioExito')+'%';
+  document.getElementById('rv-honforma').textContent=v('honorarioForma');
+}
+
+// ── DADOS ────────────────────────────────────────────────────────────
+function getData(){
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const hoje=new Date();
+  const dataHoje=hoje.getDate()+' de '+meses[hoje.getMonth()]+' de '+hoje.getFullYear();
+  let dataContrato=dataHoje;
+  const dc=document.getElementById('dataContrato').value;
+  if(dc){const[y,m,d]=dc.split('-');dataContrato=parseInt(d)+' de '+meses[parseInt(m)-1]+' de '+y}
+  const comp=v('complemento')!=='—'?', '+v('complemento'):'';
+  const endCompleto=v('rua')+', nº '+v('numero')+comp+', Bairro '+v('bairro')+', '+v('cidade')+'/'+v('uf')+', CEP '+v('cep');
+  return{nome:v('nome'),nacionalidade:v('nacionalidade'),estadoCivil:v('estadoCivil'),profissao:v('profissao'),rg:v('rg'),rgOrgao:v('rgOrgao'),cpf:v('cpf'),telefone:v('telefone'),emailCliente:v('emailCliente'),endCompleto,rua:v('rua'),numero:v('numero'),bairro:v('bairro'),cidade:v('cidade'),uf:v('uf'),cep:v('cep'),objeto:v('objeto'),numProcesso:v('numProcesso'),vara:v('vara'),hipo:document.getElementById('hipoCheck').checked,hipoMotivo:v('hipoMotivo'),honorarioValor:v('honorarioValor'),honorarioExtenso:v('honorarioExtenso'),honorarioForma:v('honorarioForma'),honorarioExito:v('honorarioExito'),dataContrato,dataHoje};
+}
+
+// ── GERAR DOCX ───────────────────────────────────────────────────────
+async function gerarProcuracao(d){
+  const{Document,Packer,Paragraph,TextRun,AlignmentType}=docx;
+  const B=(t,i=false)=>new TextRun({text:t,bold:true,italics:i,font:'Times New Roman',size:24});
+  const N=(t,i=false)=>new TextRun({text:t,font:'Times New Roman',size:24,italics:i});
+  const P=(ch,al)=>new Paragraph({children:ch,alignment:al||AlignmentType.JUSTIFIED,spacing:{after:200}});
+  const BR=()=>new Paragraph({children:[new TextRun({text:'',font:'Times New Roman',size:24})],spacing:{after:160}});
+  const doc2=new Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1440,bottom:1440,left:1800}}},children:[
+    P([B('PROCURAÇÃO '),B('AD JUDICIA ET EXTRA',true)],AlignmentType.CENTER),BR(),
+    P([B('OUTORGANTE: '),N(d.nome+', '+d.nacionalidade+', '+d.estadoCivil+', '+d.profissao+', portador(a) do RG nº '+d.rg+' '+d.rgOrgao+', inscrito(a) no CPF sob o nº '+d.cpf+', residente e domiciliado(a) na '+d.endCompleto+'.')]),BR(),
+    P([B('OUTORGADA: '),B('CAREN FRANCIELE OLIVEIRA'),N(', brasileira, casada, advogada, regularmente inscrita na OAB/RS sob o nº 109.892, com endereço profissional na Rua Teófilo Otoni, nº 44, Bairro Partenon, Porto Alegre/RS, CEP 90.660-140, e endereço eletrônico cfo.escritorio@gmail.com.')]),BR(),
+    P([B('PODERES: '),N('Pelo presente instrumento particular, a OUTORGANTE nomeia e constitui sua bastante procuradora a OUTORGADA, a quem confere os amplos poderes para o foro em geral, com a cláusula '),N('ad judicia et extra',true),N(', para, em nome da OUTORGANTE, representá-la em qualquer Juízo, Instância ou Tribunal, bem como perante repartições públicas federais, estaduais e municipais, e entidades privadas. Poderá a OUTORGADA propor as ações que competirem e defender a OUTORGANTE nas contrárias, seguindo umas e outras até final decisão, utilizando todos os recursos legais e acompanhando-os.')]),BR(),
+    P([B('PODERES ESPECIAIS: '),N('A OUTORGANTE confere à OUTORGADA poderes especiais para receber citação, confessar, reconhecer a procedência do pedido, transigir, desistir, renunciar ao direito sobre o qual se funda a ação, receber valores e dar quitação, firmar compromissos ou acordos, levantar ou receber alvarás, assinar declarações de hipossuficiência econômica, e substabelecer esta procuração, com ou sem reserva de iguais poderes, praticando, enfim, todos os demais atos que se fizerem necessários ao fiel e cabal cumprimento deste mandato, especialmente para atuar na defesa da OUTORGANTE no '+d.objeto+'.')]),BR(),
+    P([N('Porto Alegre, '+d.dataContrato+'.')]),BR(),BR(),
+    P([N('_________________________________________')],AlignmentType.CENTER),
+    P([N(d.nome)],AlignmentType.CENTER),
+    P([N('CPF: '+d.cpf)],AlignmentType.CENTER),
+  ]}]});
+  return await Packer.toBase64String(doc2);
+}
+
+async function gerarHipossuficiencia(d){
+  const{Document,Packer,Paragraph,TextRun,AlignmentType}=docx;
+  const B=(t)=>new TextRun({text:t,bold:true,font:'Times New Roman',size:24});
+  const N=(t)=>new TextRun({text:t,font:'Times New Roman',size:24});
+  const P=(ch,al)=>new Paragraph({children:ch,alignment:al||AlignmentType.JUSTIFIED,spacing:{after:200}});
+  const BR=()=>new Paragraph({children:[new TextRun({text:'',font:'Times New Roman',size:24})],spacing:{after:160}});
+  const motivo=(d.hipoMotivo&&d.hipoMotivo!=='—')?d.hipoMotivo:'Encontro-me em situação de hipossuficiência econômica, não possuindo condições financeiras de arcar com o pagamento das custas processuais, despesas judiciais, taxas e honorários advocatícios sem prejuízo do meu sustento e de minha família.';
+  const doc2=new Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1440,bottom:1440,left:1800}}},children:[
+    P([B('DECLARAÇÃO DE HIPOSSUFICIÊNCIA ECONÔMICA')],AlignmentType.CENTER),BR(),
+    P([N('Eu, '),B(d.nome),N(', '+d.nacionalidade+', '+d.estadoCivil+', '+d.profissao+', portador(a) do RG nº '+d.rg+' '+d.rgOrgao+', inscrito(a) no CPF sob o nº '+d.cpf+', residente e domiciliado(a) na '+d.endCompleto+', DECLARO, sob as penas da lei e para fins de concessão do benefício da Gratuidade da Justiça, nos termos do artigo 5º, inciso LXXIV, da Constituição Federal, bem como dos artigos 98 e seguintes do Código de Processo Civil (Lei nº 13.105/2015), que:')]),BR(),
+    P([N(motivo)]),BR(),
+    P([N('Declaro, ainda, estar ciente de que a falsidade das informações ora prestadas poderá acarretar a revogação do benefício da gratuidade da justiça, bem como a aplicação das sanções civis, administrativas e criminais cabíveis, na forma da legislação vigente.')]),BR(),
+    P([N('Por ser expressão da verdade, firmo a presente declaração para que produza seus jurídicos e legais efeitos.')]),BR(),
+    P([N('Porto Alegre/RS, '+d.dataHoje+'.')]),BR(),BR(),
+    P([N('_________________________________________')],AlignmentType.CENTER),
+    P([N(d.nome)],AlignmentType.CENTER),
+    P([N('CPF nº '+d.cpf)],AlignmentType.CENTER),
+  ]}]});
+  return await Packer.toBase64String(doc2);
+}
+
+async function gerarContrato(d){
+  const{Document,Packer,Paragraph,TextRun,AlignmentType}=docx;
+  const B=(t)=>new TextRun({text:t,bold:true,font:'Times New Roman',size:24});
+  const N=(t)=>new TextRun({text:t,font:'Times New Roman',size:24});
+  const P=(ch,al)=>new Paragraph({children:ch,alignment:al||AlignmentType.JUSTIFIED,spacing:{after:160}});
+  const CL=(t)=>new Paragraph({children:[B(t)],spacing:{before:280,after:120}});
+  const BR=()=>new Paragraph({children:[new TextRun({text:'',font:'Times New Roman',size:24})],spacing:{after:100}});
+  const doc2=new Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1440,bottom:1440,left:1800}}},children:[
+    new Paragraph({children:[B('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS E HONORÁRIOS')],alignment:AlignmentType.CENTER,spacing:{after:280}}),BR(),
+    P([B('CONTRATANTE: '),N(d.nome+', '+d.nacionalidade+', '+d.estadoCivil+', '+d.profissao+', portador(a) do RG nº '+d.rg+' '+d.rgOrgao+' e CPF nº '+d.cpf+', residente e domiciliado(a) na '+d.endCompleto+'.')]),BR(),
+    P([B('CONTRATADA: '),B('CAREN FRANCIELE OLIVEIRA'),N(', brasileira, casada, advogada, inscrita na OAB/RS sob o nº 109.892, com endereço profissional na Rua Teófilo Otoni, nº 44, Bairro Partenon, Porto Alegre/RS, CEP 90660-140, endereço eletrônico cfo.escritorio@gmail.com.')]),BR(),
+    P([N('As partes acima identificadas firmam o presente CONTRATO DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS, nos termos da Lei nº 8.906/1994, do Código de Ética e Disciplina da OAB, da Lei nº 10.406/2002 (Código Civil) e demais normas aplicáveis.')]),
+    CL('CLÁUSULA PRIMEIRA – DO OBJETO'),
+    P([N('O presente contrato tem por objeto a prestação de serviços advocatícios consistentes em: '+d.objeto)]),
+    P([N('Parágrafo Primeiro. Os serviços contratados compreendem exclusivamente os atos necessários ao objeto descrito nesta cláusula.')]),
+    P([N('Parágrafo Segundo. Não estão incluídos neste contrato recursos para Tribunais Superiores, ações autônomas, cumprimento de sentença, execuções, incidentes processuais extraordinários ou quaisquer outras medidas não expressamente previstas, salvo contratação específica.')]),
+    P([N('Parágrafo Terceiro. A atuação profissional constitui obrigação de meio, não havendo garantia de resultado.')]),
+    CL('CLÁUSULA SEGUNDA – DOS HONORÁRIOS CONTRATUAIS'),
+    P([N('Pelos serviços ora contratados, o CONTRATANTE pagará à CONTRATADA a quantia de R$ '+d.honorarioValor+' ('+d.honorarioExtenso+'), da seguinte forma: '+d.honorarioForma+'.')]),
+    P([N('Parágrafo Primeiro. O inadimplemento acarretará multa de 2% (dois por cento) sobre o débito, juros de mora de 1% (um por cento) ao mês e correção monetária pelo IPCA-E ou índice que venha a substituí-lo.')]),
+    P([N('Parágrafo Segundo. O presente contrato constitui título executivo extrajudicial, nos termos do artigo 784, inciso XII, do Código de Processo Civil.')]),
+    CL('CLÁUSULA TERCEIRA – DOS HONORÁRIOS DE ÊXITO'),
+    P([N('Além dos honorários contratuais, o CONTRATANTE pagará honorários de êxito correspondentes a '+d.honorarioExito+'% sobre os valores recebidos, acordos celebrados, compensações obtidas, reduções de dívida ou qualquer vantagem econômica alcançada.')]),
+    P([N('Parágrafo Primeiro. Os honorários de êxito incidirão sobre o valor bruto obtido.')]),
+    P([N('Parágrafo Segundo. Caso haja acordo realizado diretamente entre as partes, os honorários permanecerão integralmente devidos.')]),
+    P([N('Parágrafo Terceiro. Os honorários de êxito serão devidos independentemente de quem promova o levantamento dos valores.')]),
+    CL('CLÁUSULA QUARTA – DOS HONORÁRIOS DE SUCUMBÊNCIA'),
+    P([N('Os honorários de sucumbência eventualmente fixados em favor da CONTRATADA pertencem exclusivamente a esta, nos termos do artigo 23 da Lei nº 8.906/1994, não se compensando com os honorários contratuais.')]),
+    CL('CLÁUSULA QUINTA – DAS DESPESAS'),
+    P([N('Todas as despesas necessárias ao desenvolvimento dos serviços contratados correrão por conta do CONTRATANTE, incluindo custas judiciais, taxas, emolumentos, diligências, autenticações, certidões, honorários periciais, deslocamentos, despesas postais e contratação de correspondentes.')]),
+    CL('CLÁUSULA SEXTA – DAS OBRIGAÇÕES DO CONTRATANTE'),
+    P([N('São obrigações do CONTRATANTE: I – fornecer documentos e informações verdadeiras e completas; II – manter seus dados cadastrais atualizados; III – comparecer aos atos para os quais for convocado; IV – cumprir os prazos e orientações recebidos; V – efetuar os pagamentos previstos neste contrato.')]),
+    CL('CLÁUSULA SÉTIMA – DAS OBRIGAÇÕES DA CONTRATADA'),
+    P([N('São obrigações da CONTRATADA: I – atuar com zelo, diligência e observância das normas éticas e legais; II – manter o CONTRATANTE informado sobre o andamento do caso; III – preservar o sigilo profissional; IV – adotar as medidas jurídicas adequadas à defesa dos interesses do CONTRATANTE.')]),
+    CL('CLÁUSULA OITAVA – DA RESCISÃO'),
+    P([N('O presente contrato poderá ser rescindido por comum acordo, renúncia da advogada, revogação do mandato ou inadimplemento contratual.')]),
+    P([N('Parágrafo Primeiro. Em caso de revogação do mandato, desistência ou rescisão por iniciativa do CONTRATANTE, serão devidos os honorários proporcionais ao trabalho realizado, sem prejuízo dos honorários de êxito quando cabíveis.')]),
+    P([N('Parágrafo Segundo. A renúncia ao mandato observará o disposto no artigo 5º, § 3º, da Lei nº 8.906/1994.')]),
+    CL('CLÁUSULA NONA – DA AUTORIZAÇÃO DE DESTAQUE'),
+    P([N('O CONTRATANTE autoriza expressamente a CONTRATADA a requerer o destaque contratual dos honorários advocatícios sobre valores depositados judicialmente ou decorrentes de acordo.')]),
+    CL('CLÁUSULA DÉCIMA – DA PROTEÇÃO DE DADOS'),
+    P([N('As partes autorizam o tratamento dos dados pessoais necessários à execução deste contrato, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).')]),
+    CL('CLÁUSULA DÉCIMA PRIMEIRA – DAS COMUNICAÇÕES'),
+    P([N('As comunicações entre as partes poderão ocorrer por e-mail, WhatsApp, aplicativos de mensagens, telefone ou correspondência física, considerando-se válidas as informações enviadas aos contatos fornecidos.')]),
+    CL('CLÁUSULA DÉCIMA SEGUNDA – DO FORO'),
+    P([N('Fica eleito o foro da Comarca de Porto Alegre/RS para dirimir quaisquer controvérsias oriundas deste contrato, com renúncia a qualquer outro, por mais privilegiado que seja.')]),
+    BR(),
+    P([N('Porto Alegre/RS, '+d.dataContrato+'.')]),BR(),BR(),
+    P([N('_________________________________________')],AlignmentType.CENTER),
+    P([N(d.nome)],AlignmentType.CENTER),
+    P([N('CPF: '+d.cpf)],AlignmentType.CENTER),BR(),
+    P([N('_________________________________________')],AlignmentType.CENTER),
+    P([B('CAREN FRANCIELE OLIVEIRA')],AlignmentType.CENTER),
+    P([N('OAB/RS 109.892')],AlignmentType.CENTER),BR(),
+    P([N('TESTEMUNHAS:')]),BR(),
+    P([N('_________________________________________    CPF: ______________________________')]),
+    P([N('_________________________________________    CPF: ______________________________')]),
+  ]}]});
+  return await Packer.toBase64String(doc2);
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show'+(err?' error-toast':'');
+  setTimeout(()=>t.classList.remove('show'),4500);
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────────────────
+function baixarDocx(b64,nome){
+  const bin=atob(b64);
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  const blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=nome;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+const esperar=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ── ENVIO PRINCIPAL ──────────────────────────────────────────────────
+async function enviarFormulario(){
+  const serviceId  = localStorage.getItem('ejs_service');
+  const templateId = localStorage.getItem('ejs_template');
+  const pubKey     = localStorage.getItem('ejs_pubkey');
+
+  if(!serviceId||!templateId||!pubKey){
+    toast('Configure as chaves do EmailJS antes de enviar.', true);
+    document.getElementById('config-panel').style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+
+  const btn=document.getElementById('btnEnviar');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Gerando documentos…';
+
+  try{
+    const d=getData();
+
+    // Gerar documentos
+    const b64Proc = await gerarProcuracao(d);
+    const b64Hipo = d.hipo ? await gerarHipossuficiencia(d) : null;
+    const b64Cont = await gerarContrato(d);
+
+    btn.innerHTML='<span class="spinner"></span>Enviando e-mail…';
+
+    // Montar resumo para o corpo do e-mail
+    const resumo =
+`NOVO CLIENTE — ${d.nome}
+${'─'.repeat(40)}
+CPF: ${d.cpf}
+RG: ${d.rg} ${d.rgOrgao}
+Estado civil: ${d.estadoCivil}
+Profissão: ${d.profissao}
+Telefone: ${d.telefone}
+E-mail: ${d.emailCliente||'(não informado)'}
+${'─'.repeat(40)}
+Endereço: ${d.endCompleto}
+${'─'.repeat(40)}
+OBJETO: ${d.objeto}
+Nº Processo: ${d.numProcesso||'(não informado)'}
+Vara: ${d.vara||'(não informada)'}
+Gratuidade da Justiça: ${d.hipo?'SIM':'NÃO'}
+${'─'.repeat(40)}
+HONORÁRIOS CONTRATUAIS: R$ ${d.honorarioValor} (${d.honorarioExtenso})
+Forma: ${d.honorarioForma}
+Êxito: ${d.honorarioExito}%
+Data assinatura: ${d.dataContrato}
+${'─'.repeat(40)}
+Documentos gerados: Procuração, Contrato${d.hipo?', Declaração de Hipossuficiência':''}`;
+
+    // Enviar via EmailJS
+    // O template deve ter as variáveis: {{to_email}}, {{from_name}}, {{subject}}, {{message}}
+    await emailjs.send(serviceId, templateId, {
+      to_email:   EMAIL_DESTINO,
+      from_name:  d.nome,
+      subject:    'Novo cliente: '+d.nome+' — Ficha preenchida em '+d.dataHoje,
+      message:    resumo,
+    });
+
+    // Download dos docx no dispositivo do cliente
+    const nomeBase = d.nome.split(' ').slice(0,2).join('_');
+    baixarDocx(b64Proc, 'Procuracao_'+nomeBase+'.docx');
+    await esperar(500);
+    baixarDocx(b64Cont, 'Contrato_'+nomeBase+'.docx');
+    if(b64Hipo){ await esperar(500); baixarDocx(b64Hipo, 'Hipossuficiencia_'+nomeBase+'.docx'); }
+
+    goTo(6);
+
+  }catch(err){
+    console.error(err);
+    let msg='Erro ao enviar. ';
+    if(err&&err.text) msg+=err.text;
+    else msg+='Verifique as chaves do EmailJS e tente novamente.';
+    toast(msg,true);
+    btn.disabled=false;
+    btn.innerHTML='✉ Confirmar e enviar';
+  }
+}
+</script>
+</body>
+</html>
